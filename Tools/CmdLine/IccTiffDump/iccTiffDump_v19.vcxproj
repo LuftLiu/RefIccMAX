@@ -103,7 +103,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\..\..\IccProfLib;$(LIBTIFF_INCLUDE);..\IccApplyProfiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\IccProfLib;..\..\..\Include;..\IccApplyProfiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -122,10 +122,10 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>IccProfLib.lib;$(LIBTIFF_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>IccProfLib.lib;libjpeg9c-static-MT.lib;zlib1211-static-MT.lib;libtiff409-static-MT.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(Platform)\$(Configuration)/iccTiffDump.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\..\IccProfLib\$(Platform)\$(Configuration);$(LIBTIFF_LIBDIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\IccProfLib\$(Platform)\$(Configuration);..\..\..\Lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(Platform)\$(Configuration)/iccTiffDump.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -143,7 +143,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\IccProfLib;$(LIBTIFF_INCLUDE);..\IccApplyProfiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\IccProfLib;..\..\..\Include;..\IccApplyProfiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -162,10 +162,10 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>IccProfLib.lib;$(LIBTIFF_DLIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>IccProfLib.lib;libjpeg9c-static-MTd.lib;zlib1211-static-MTd.lib;libtiff409-static-MTd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(Platform)\$(Configuration)/iccTiffDump.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\..\IccProfLib\$(Platform)\$(Configuration);$(LIBTIFF_LIBDIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\IccProfLib\$(Platform)\$(Configuration);..\..\..\Lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(Platform)\$(Configuration)/iccTiffDump.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
@@ -188,7 +188,7 @@ copy $(Platform)\$(Configuration)\iccTiffDump.pdb ..\..\..\Testing
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\..\..\IccProfLib;$(LIBTIFF_INCLUDEx64);..\IccApplyProfiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\IccProfLib;..\..\..\Include;..\IccApplyProfiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -207,10 +207,10 @@ copy $(Platform)\$(Configuration)\iccTiffDump.pdb ..\..\..\Testing
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>IccProfLib.lib;$(LIBTIFF_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>IccProfLib.lib;libjpeg9c-static-MT.lib;zlib1211-static-MT.lib;libtiff409-static-MT.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(Platform)\$(Configuration)/iccTiffDump.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\..\IccProfLib\$(Platform)\$(Configuration);$(LIBTIFF_LIBDIRx64);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\IccProfLib\$(Platform)\$(Configuration);..\..\..\Lib64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(Platform)\$(Configuration)/iccTiffDump.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -229,7 +229,7 @@ copy $(Platform)\$(Configuration)\iccTiffDump.pdb ..\..\..\Testing
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\IccProfLib;$(LIBTIFF_INCLUDEx64);..\IccApplyProfiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\IccProfLib;..\..\..\Include;..\IccApplyProfiles;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -248,10 +248,10 @@ copy $(Platform)\$(Configuration)\iccTiffDump.pdb ..\..\..\Testing
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>IccProfLib.lib;$(LIBTIFF_DLIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>IccProfLib.lib;libjpeg9c-static-MTd.lib;zlib1211-static-MTd.lib;libtiff409-static-MTd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(Platform)\$(Configuration)/iccTiffDump.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\..\IccProfLib\$(Platform)\$(Configuration);$(LIBTIFF_LIBDIRx64);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\IccProfLib\$(Platform)\$(Configuration);..\..\..\Lib64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(Platform)\$(Configuration)/iccTiffDump.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>

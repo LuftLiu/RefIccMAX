@@ -78,138 +78,154 @@
 
 
 typedef struct {
-  unsigned long nId;
-  char *szName;
+    unsigned long nId;
+    char *szName;
 } IdList;
 #define UNKNOWNID 0xffffffff
 
 
 IdList planar_types[] = {
-  {0,  "Interleaved samples"},
-  {PLANARCONFIG_CONTIG,  "Interleaved samples"},
-  {PLANARCONFIG_SEPARATE,     "Samples in separate planes"},
+    {0,  "Interleaved samples"},
+    {PLANARCONFIG_CONTIG,  "Interleaved samples"},
+    {PLANARCONFIG_SEPARATE,     "Samples in separate planes"},
 
-  {UNKNOWNID, "Unknown"},
+    {UNKNOWNID, "Unknown"},
 };
 
 IdList photo_types[] = {
-  {PHOTO_MINISWHITE, "Min Is White"},
-  {PHOTO_MINISBLACK, "Min Is Black"},
-  {PHOTO_CIELAB, "CIELab"},
-  {PHOTO_ICCLAB, "IccLab"},
+    {PHOTO_MINISWHITE, "Min Is White"},
+    {PHOTO_MINISBLACK, "Min Is Black"},
+    {PHOTO_CIELAB, "CIELab"},
+    {PHOTO_ICCLAB, "IccLab"},
 
-  {UNKNOWNID, "Unknown"},
+    {UNKNOWNID, "Unknown"},
 };
 
 IdList compression_types[] = {
-  {COMPRESSION_NONE,   "None"},
-  {COMPRESSION_LZW,    "LZW"},
-  {COMPRESSION_JPEG,   "JPEG"},
-  {COMPRESSION_DEFLATE, "Deflate"},
-  {COMPRESSION_ADOBE_DEFLATE, "Deflate"},
+    {COMPRESSION_NONE,   "None"},
+    {COMPRESSION_LZW,    "LZW"},
+    {COMPRESSION_JPEG,   "JPEG"},
+    {COMPRESSION_DEFLATE, "Deflate"},
+    {COMPRESSION_ADOBE_DEFLATE, "Deflate"},
 
-  {UNKNOWNID, "Unknown"},
+    {UNKNOWNID, "Unknown"},
 };
 
 const char* GetId(unsigned long nId, IdList* pIdList)
 {
-  for (;pIdList->nId != nId && pIdList->nId != UNKNOWNID; pIdList++);
+    for (;pIdList->nId != nId && pIdList->nId != UNKNOWNID; pIdList++);
 
-  return pIdList->szName;
+    return pIdList->szName;
 }
 
 
 void Usage() 
 {
-  printf("Usage: iccTiffDump tiff_file {exported_icc_file}\n\n");
+    printf("Usage: iccTiffDump tiff_file {exported_icc_file}\n\n");
 }
 
 //===================================================
 
 int main(int argc, icChar* argv[])
 {
-  int minargs = 1; // minimum number of arguments
-  if(argc<=minargs) {
-    Usage();
-    return -1;
-  }
-
-  CTiffImg SrcImg;
-
-  if (!SrcImg.Open(argv[1])) {
-    printf("\nFile [%s] cannot be opened.\n", argv[1]);
-    return false;
-  }
-
-  printf("-------------------->Tiff Image Dump<---------------------------\n");
-  printf("Filename:          %s\n", argv[1]);
-  printf("Size:              (%d x %d) pixels, (%.2lf\" x %.2lf\")\n",
-    SrcImg.GetWidth(), SrcImg.GetHeight(),
-    SrcImg.GetWidthIn(), SrcImg.GetHeightIn());
-  printf("Planar:            %s\n", GetId(SrcImg.GetPlanar(), planar_types));
-  printf("BitsPerSample:     %d\n", SrcImg.GetBitsPerSample());
-  printf("SamplesPerPixel:   %d\n", SrcImg.GetSamples());
-  int nExtra = SrcImg.GetExtraSamples();
-  if (nExtra)
-    printf("ExtraSamples       %d\n", nExtra);
-  printf("Photometric:       %s\n", GetId(SrcImg.GetPhoto(), photo_types));
-  printf("BytesPerLine:      %d\n", SrcImg.GetBytesPerLine());
-
-  printf("Resolution:        (%lf x %lf) pixels per/inch\n", SrcImg.GetXRes(), SrcImg.GetYRes());
-  printf("Compression:       %s\n", GetId(SrcImg.GetCompress(), compression_types));
-
-  unsigned char *pProfMem;
-  unsigned int nLen;
-  if (SrcImg.GetIccProfile(pProfMem, nLen)) {
-    printf("Profile:           Embedded\n");
-
-    CIccProfile *pProfile = OpenIccProfile(pProfMem, nLen);
-
-    if (pProfile) {
-      icHeader *pHdr = &pProfile->m_Header;
-      CIccInfo Fmt;
-
-      if (pHdr->colorSpace)
-        printf(" Color Space:      %s\n", Fmt.GetColorSpaceSigName(pHdr->colorSpace));
-      if (pHdr->pcs)
-        printf(" Colorimetric PCS: %s\n", Fmt.GetColorSpaceSigName(pHdr->pcs));
-      if (pHdr->spectralPCS) {
-        printf(" Spectral PCS:     %s\n", Fmt.GetSpectralColorSigName(pHdr->spectralPCS));
-        if (pHdr->spectralRange.start || pHdr->spectralRange.end || pHdr->spectralRange.steps) {
-          printf(" Spectral Range:   start=%.1fnm, end=%.1fnm, steps=%d\n",
-            icF16toF(pHdr->spectralRange.start),
-            icF16toF(pHdr->spectralRange.end),
-            pHdr->spectralRange.steps);
-        }
-        if (pHdr->biSpectralRange.start || pHdr->biSpectralRange.end || pHdr->biSpectralRange.steps) {
-          printf(" BiSpectral Range: start=%.1fnm, end=%.1fnm, steps=%d\n",
-            icF16toF(pHdr->biSpectralRange.start),
-            icF16toF(pHdr->biSpectralRange.end),
-            pHdr->biSpectralRange.steps);
-        }
-      }
-      CIccTag *pDesc = pProfile->FindTag(icSigProfileDescriptionTag);
-      if (pDesc->GetType()==icSigTextDescriptionType) {
-        CIccTagTextDescription *pText = (CIccTagTextDescription*)pDesc;
-        printf(" Description:      %s\n", pText->GetText());
-      }
-      else if (pDesc->GetType()==icSigMultiLocalizedUnicodeType) {
-        CIccTagMultiLocalizedUnicode *pStrs = (CIccTagMultiLocalizedUnicode*)pDesc;
-        if (pStrs->m_Strings) {
-          CIccMultiLocalizedUnicode::iterator text = pStrs->m_Strings->begin();
-          if (text != pStrs->m_Strings->end()) {
-            char line[256];
-            printf(" Description:      %s\n", text->GetAnsi(line, sizeof(line)-1));
-          }
-        }
-      }
+    int minargs = 1; // minimum number of arguments
+    if(argc<=minargs)
+    {
+        Usage();
+        return -1;
     }
-  }
-  else {
-    printf("Profile:           Embedded\n");
-  }
 
-  SrcImg.Close();
-  return 0;
+    CTiffImg SrcImg;
+
+    if (!SrcImg.Open(argv[1]))
+    {
+        printf("\nFile [%s] cannot be opened.\n", argv[1]);
+        return false;
+    }
+
+    printf("-------------------->Tiff Image Dump<---------------------------\n");
+    printf("Filename:          %s\n", argv[1]);
+    printf("Size:              (%d x %d) pixels, (%.2lf\" x %.2lf\")\n",
+                                SrcImg.GetWidth(), SrcImg.GetHeight(),
+                                SrcImg.GetWidthIn(), SrcImg.GetHeightIn());
+    printf("Planar:            %s\n", GetId(SrcImg.GetPlanar(), planar_types));
+    printf("BitsPerSample:     %d\n", SrcImg.GetBitsPerSample());
+    printf("SamplesPerPixel:   %d\n", SrcImg.GetSamples());
+    
+    int nExtra = SrcImg.GetExtraSamples();
+    if (nExtra)
+        printf("ExtraSamples       %d\n", nExtra);
+    
+    printf("Photometric:       %s\n", GetId(SrcImg.GetPhoto(), photo_types));
+    printf("BytesPerLine:      %d\n", SrcImg.GetBytesPerLine());
+
+    printf("Resolution:        (%lf x %lf) pixels per/inch\n", SrcImg.GetXRes(), SrcImg.GetYRes());
+    printf("Compression:       %s\n", GetId(SrcImg.GetCompress(), compression_types));
+
+    unsigned char *pProfMem;
+    unsigned int nLen;
+    if (SrcImg.GetIccProfile(pProfMem, nLen))
+    {
+        printf("Profile:           Embedded\n");
+
+        CIccProfile *pProfile = OpenIccProfile(pProfMem, nLen);
+
+        if (pProfile)
+        {
+            icHeader *pHdr = &pProfile->m_Header;
+            CIccInfo Fmt;
+
+            if (pHdr->colorSpace)
+                printf(" Color Space:      %s\n", Fmt.GetColorSpaceSigName(pHdr->colorSpace));
+            if (pHdr->pcs)
+                printf(" Colorimetric PCS: %s\n", Fmt.GetColorSpaceSigName(pHdr->pcs));
+            if (pHdr->spectralPCS)
+            {
+                printf(" Spectral PCS:     %s\n", Fmt.GetSpectralColorSigName(pHdr->spectralPCS));
+                if (pHdr->spectralRange.start || pHdr->spectralRange.end || pHdr->spectralRange.steps)
+                {
+                    printf(" Spectral Range:   start=%.1fnm, end=%.1fnm, steps=%d\n",
+                        icF16toF(pHdr->spectralRange.start),
+                        icF16toF(pHdr->spectralRange.end),
+                        pHdr->spectralRange.steps);
+                }
+                
+                if (pHdr->biSpectralRange.start || pHdr->biSpectralRange.end || pHdr->biSpectralRange.steps)
+                {
+                    printf(" BiSpectral Range: start=%.1fnm, end=%.1fnm, steps=%d\n",
+                        icF16toF(pHdr->biSpectralRange.start),
+                        icF16toF(pHdr->biSpectralRange.end),
+                        pHdr->biSpectralRange.steps);
+                }
+            }
+            
+            CIccTag *pDesc = pProfile->FindTag(icSigProfileDescriptionTag);
+            if (pDesc->GetType()==icSigTextDescriptionType)
+            {
+                CIccTagTextDescription *pText = (CIccTagTextDescription*)pDesc;
+                printf(" Description:      %s\n", pText->GetText());
+            }
+            else if (pDesc->GetType()==icSigMultiLocalizedUnicodeType)
+            {
+                CIccTagMultiLocalizedUnicode *pStrs = (CIccTagMultiLocalizedUnicode*)pDesc;
+                if (pStrs->m_Strings)
+                {
+                    CIccMultiLocalizedUnicode::iterator text = pStrs->m_Strings->begin();
+                    if (text != pStrs->m_Strings->end())
+                    {
+                        char line[256];
+                        printf(" Description:      %s\n", text->GetAnsi(line, sizeof(line)-1));
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        printf("Profile:           Embedded\n");
+    }
+
+    SrcImg.Close();
+    return 0;
 }
 

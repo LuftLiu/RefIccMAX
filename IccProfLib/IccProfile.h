@@ -98,8 +98,8 @@ class ICCPROFLIB_API CIccMemIO;
 struct IccTagEntry
 {
 
-  icTag TagInfo;
-  CIccTag* pTag;
+    icTag TagInfo;
+    CIccTag* pTag;
 };
 
 /**
@@ -132,9 +132,9 @@ typedef struct {CIccTag *ptr;} IccTagPtr;
 typedef std::list<IccTagPtr> TagPtrList;
 
 typedef enum {
-  icVersionBasedID,
-  icAlwaysWriteID,
-  icNeverWriteID,
+    icVersionBasedID,
+    icAlwaysWriteID,
+    icNeverWriteID,
 }icProfileIDSaveMethod;
 
 /**
@@ -149,92 +149,92 @@ typedef enum {
 class ICCPROFLIB_API CIccProfile : public IIccProfileConnectionConditions 
 {
 public:
-  CIccProfile();
-  CIccProfile(const CIccProfile &Profile);
-  CIccProfile &operator=(const CIccProfile &Profile);
-  virtual CIccProfile* NewCopy() const { return new CIccProfile(*this); }
-  virtual CIccProfile* NewProfile() const { return new CIccProfile(); }
-  virtual ~CIccProfile();
+    CIccProfile();
+    CIccProfile(const CIccProfile &Profile);
+    CIccProfile &operator=(const CIccProfile &Profile);
+    virtual CIccProfile* NewCopy() const { return new CIccProfile(*this); }
+    virtual CIccProfile* NewProfile() const { return new CIccProfile(); }
+    virtual ~CIccProfile();
 
-  virtual const char *GetClassName() { return "CIccProfile"; }
+    virtual const char *GetClassName() { return "CIccProfile"; }
 
-  icHeader m_Header;
+    icHeader m_Header;
 
-  TagEntryList *m_Tags;
+    TagEntryList *m_Tags;
 
-  CIccTag* FindTag(icSignature sig);
-  CIccTag* FindTagOfType(icSignature tagSig, icTagTypeSignature typeSig);
+    CIccTag* FindTag(icSignature sig);
+    CIccTag* FindTagOfType(icSignature tagSig, icTagTypeSignature typeSig);
 
-  bool AttachTag(icSignature sig, CIccTag *pTag);
-  bool DeleteTag(icSignature sig);
-  CIccMemIO* GetTagIO(icSignature sig); //caller should delete returned result
-	bool ReadTags(CIccProfile* pProfile); // will read in all the tags using the IO of the passed profile
+    bool AttachTag(icSignature sig, CIccTag *pTag);
+    bool DeleteTag(icSignature sig);
+    CIccMemIO* GetTagIO(icSignature sig); //caller should delete returned result
+    bool ReadTags(CIccProfile* pProfile); // will read in all the tags using the IO of the passed profile
 
-  bool Attach(CIccIO *pIO, bool bUseSubProfile=false);
-  bool Detach();
-  bool HasIO() { return m_pAttachIO != NULL;  }
+    bool Attach(CIccIO *pIO, bool bUseSubProfile=false);
+    bool Detach();
+    bool HasIO() { return m_pAttachIO != NULL;  }
 
-  bool Read(CIccIO *pIO, bool bUseSubProfile=false);
-  icValidateStatus ReadValidate(CIccIO *pIO, std::string &sReport);
-  bool Write(CIccIO *pIO, icProfileIDSaveMethod nWriteId=icVersionBasedID);
+    bool Read(CIccIO *pIO, bool bUseSubProfile=false);
+    icValidateStatus ReadValidate(CIccIO *pIO, std::string &sReport);
+    bool Write(CIccIO *pIO, icProfileIDSaveMethod nWriteId=icVersionBasedID);
 
-  bool ReadProfileID(icProfileID &profileID); //works if HasIO() is true 
+    bool ReadProfileID(icProfileID &profileID); //works if HasIO() is true 
 
-  void InitHeader();
-  icValidateStatus Validate(std::string &sReport, std::string sSigPath="") const;
+    void InitHeader();
+    icValidateStatus Validate(std::string &sReport, std::string sSigPath="") const;
 
-  icUInt16Number GetSpaceSamples() const;
+    icUInt16Number GetSpaceSamples() const;
 
-  bool AreTagsUnique() const;
-	bool IsTagPresent(icSignature sig) const { return (GetTag(sig)!=NULL); }
+    bool AreTagsUnique() const;
+    bool IsTagPresent(icSignature sig) const { return (GetTag(sig)!=NULL); }
 
 
-  //Implement the IIccProfileConnectionConditions interface
-  virtual const CIccTagSpectralViewingConditions *getPccViewingConditions() { return (const CIccTagSpectralViewingConditions*)
+    //Implement the IIccProfileConnectionConditions interface
+    virtual const CIccTagSpectralViewingConditions *getPccViewingConditions() { return (const CIccTagSpectralViewingConditions*)
                                                                                 FindTagOfType(icSigSpectralViewingConditionsTag, 
                                                                                               icSigSpectralViewingConditionsType); }
-  virtual CIccTagMultiProcessElement *getCustomToStandardPcc() { return (CIccTagMultiProcessElement*)
+    virtual CIccTagMultiProcessElement *getCustomToStandardPcc() { return (CIccTagMultiProcessElement*)
                                                                    FindTagOfType(icSigCustomToStandardPccTag, 
                                                                                  icSigMultiProcessElementType); }
 
-  virtual CIccTagMultiProcessElement *getStandardToCustomPcc() { return (CIccTagMultiProcessElement*)
+    virtual CIccTagMultiProcessElement *getStandardToCustomPcc() { return (CIccTagMultiProcessElement*)
                                                                    FindTagOfType(icSigStandardToCustomPccTag, 
                                                                                  icSigMultiProcessElementType); }
-  virtual icIlluminant getPccIlluminant();
-  virtual icFloatNumber getPccCCT();
-  virtual icStandardObserver getPccObserver();
-  virtual void getNormIlluminantXYZ(icFloatNumber *pXYZ);
-  virtual void getLumIlluminantXYZ(icFloatNumber *pXYZ);
-  virtual bool getMediaWhiteXYZ(icFloatNumber *pXYZ);
+    virtual icIlluminant getPccIlluminant();
+    virtual icFloatNumber getPccCCT();
+    virtual icStandardObserver getPccObserver();
+    virtual void getNormIlluminantXYZ(icFloatNumber *pXYZ);
+    virtual void getLumIlluminantXYZ(icFloatNumber *pXYZ);
+    virtual bool getMediaWhiteXYZ(icFloatNumber *pXYZ);
   
-  bool calcNormIlluminantXYZ(icFloatNumber *pXYZ, IIccProfileConnectionConditions *pObservingPCC);
-  bool calcLumIlluminantXYZ(icFloatNumber *pXYZ, IIccProfileConnectionConditions *pObservingPCC);
-  bool calcMediaWhiteXYZ(icFloatNumber *pXYZ, IIccProfileConnectionConditions *pObservingPCC);
+    bool calcNormIlluminantXYZ(icFloatNumber *pXYZ, IIccProfileConnectionConditions *pObservingPCC);
+    bool calcLumIlluminantXYZ(icFloatNumber *pXYZ, IIccProfileConnectionConditions *pObservingPCC);
+    bool calcMediaWhiteXYZ(icFloatNumber *pXYZ, IIccProfileConnectionConditions *pObservingPCC);
 
 protected:
 
-  void Cleanup();
-  IccTagEntry* GetTag(icSignature sig) const;
-  IccTagEntry* GetTag(CIccTag *pTag) const;
-  bool ReadBasic(CIccIO *pIO);
-  bool LoadTag(IccTagEntry *pTagEntry, CIccIO *pIO, bool bReadAll=false);
-  bool DetachTag(CIccTag *pTag);
+    void Cleanup();
+    IccTagEntry* GetTag(icSignature sig) const;
+    IccTagEntry* GetTag(CIccTag *pTag) const;
+    bool ReadBasic(CIccIO *pIO);
+    bool LoadTag(IccTagEntry *pTagEntry, CIccIO *pIO, bool bReadAll=false);
+    bool DetachTag(CIccTag *pTag);
 
-  CIccIO* ConnectSubProfile(CIccIO *pIO, bool bOwnIO);
+    CIccIO* ConnectSubProfile(CIccIO *pIO, bool bOwnIO);
 
-  // Profile Validation functions
-  icValidateStatus CheckRequiredTags(std::string &sReport) const;
-  bool CheckTagExclusion(std::string &sReport) const;
-  icValidateStatus CheckHeader(std::string &sReport) const;
-  icValidateStatus CheckTagTypes(std::string &sReport) const;
-  bool IsTypeValid(icTagSignature tagSig, icTagTypeSignature typeSig,
-                   icStructSignature structSig=icSigUndefinedStruct,
-                   icArraySignature arraySig=icSigUndefinedArray) const;
-  bool CheckFileSize(CIccIO *pIO) const;
+    // Profile Validation functions
+    icValidateStatus CheckRequiredTags(std::string &sReport) const;
+    bool CheckTagExclusion(std::string &sReport) const;
+    icValidateStatus CheckHeader(std::string &sReport) const;
+    icValidateStatus CheckTagTypes(std::string &sReport) const;
+    bool IsTypeValid(icTagSignature tagSig, icTagTypeSignature typeSig,
+                        icStructSignature structSig=icSigUndefinedStruct,
+                        icArraySignature arraySig=icSigUndefinedArray) const;
+    bool CheckFileSize(CIccIO *pIO) const;
 
-  CIccIO *m_pAttachIO;
+    CIccIO *m_pAttachIO;
 
-  TagPtrList *m_TagVals;
+    TagPtrList *m_TagVals;
 };
 
 CIccProfile ICCPROFLIB_API *ReadIccProfile(const icChar *szFilename, bool bUseSubProfile=false);

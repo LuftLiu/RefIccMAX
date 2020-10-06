@@ -86,340 +86,368 @@ static char THIS_FILE[]=__FILE__;
 
 CTiffImg::CTiffImg()
 {
-  m_nWidth = 0;
-  m_nHeight = 0;
-  m_nBitsPerSample = 0;
-  m_nSamples = 0;
-  m_nExtraSamples = 0;
+    m_nWidth = 0;
+    m_nHeight = 0;
+    m_nBitsPerSample = 0;
+    m_nSamples = 0;
+    m_nExtraSamples = 0;
 
-  m_hTif = NULL;
-  m_pStripBuf = NULL;
+    m_hTif = NULL;
+    m_pStripBuf = NULL;
 }
 
 CTiffImg::~CTiffImg()
 {
-  Close();
+    Close();
 }
 
 void CTiffImg::Close()
 {
-  m_nWidth = 0;
-  m_nHeight = 0;
-  m_nBitsPerSample = 0;
-  m_nSamples = 0;
-  m_nExtraSamples = 0;
+    m_nWidth = 0;
+    m_nHeight = 0;
+    m_nBitsPerSample = 0;
+    m_nSamples = 0;
+    m_nExtraSamples = 0;
 
-  if (m_hTif) {
-    TIFFClose(m_hTif);
+    if (m_hTif)
+    {
+        TIFFClose(m_hTif);
 
-    m_hTif = NULL;
-  }
+        m_hTif = NULL;
+    }
 
-  if (m_pStripBuf) {
-    free(m_pStripBuf);
-    m_pStripBuf = NULL;
-  }
+    if (m_pStripBuf)
+    {
+        free(m_pStripBuf);
+        m_pStripBuf = NULL;
+    }
 }
 
 bool CTiffImg::Create(const char *szFname, unsigned int nWidth, unsigned int nHeight,
               unsigned int nBPS, unsigned int nPhoto, unsigned int nSamples,
               float fXRes, float fYRes, bool bCompress, bool bSep)
 {
-  Close();
-  m_bRead = false;
+    Close();
+    m_bRead = false;
 
-  m_nWidth = nWidth;
-  m_nHeight = nHeight;
-  m_nBitsPerSample = (icUInt16Number)nBPS;
-  m_nSamples = (icUInt16Number)nSamples;
-  m_nRowsPerStrip = 1;
-  m_fXRes = fXRes;
-  m_fYRes = fYRes;
-  m_nPlanar = bSep ? PLANARCONFIG_SEPARATE : PLANARCONFIG_CONTIG;
-  m_nCompress = bCompress ? COMPRESSION_LZW : COMPRESSION_NONE;
+    m_nWidth = nWidth;
+    m_nHeight = nHeight;
+    m_nBitsPerSample = (icUInt16Number)nBPS;
+    m_nSamples = (icUInt16Number)nSamples;
+    m_nRowsPerStrip = 1;
+    m_fXRes = fXRes;
+    m_fYRes = fYRes;
+    m_nPlanar = bSep ? PLANARCONFIG_SEPARATE : PLANARCONFIG_CONTIG;
+    m_nCompress = bCompress ? COMPRESSION_LZW : COMPRESSION_NONE;
 
-  switch(nPhoto) {
-  case PHOTO_MINISBLACK:
-    if (m_nSamples==3) 
-      m_nPhoto = PHOTOMETRIC_RGB;
+    switch(nPhoto)
+    {
+    case PHOTO_MINISBLACK:
+        if (m_nSamples==3) 
+            m_nPhoto = PHOTOMETRIC_RGB;
+        else
+            m_nPhoto = PHOTOMETRIC_MINISBLACK;
+        break;
+    case PHOTO_MINISWHITE:
+        if (m_nSamples==4)
+            m_nPhoto = PHOTOMETRIC_SEPARATED;
+        else
+            m_nPhoto = PHOTOMETRIC_MINISWHITE;
+        break;
+    case PHOTO_CIELAB:
+        m_nPhoto = PHOTOMETRIC_CIELAB;
+        break;
+    case PHOTO_ICCLAB:
+        m_nPhoto = PHOTOMETRIC_ICCLAB;
+        break;
+    }
+
+    m_hTif = TIFFOpen(szFname, "w");
+    if (!m_hTif) {
+        TIFFError(szFname,"Can not open output image");
+        return false;
+    }
+    TIFFSetField(m_hTif, TIFFTAG_IMAGEWIDTH, (uint32) m_nWidth);
+    TIFFSetField(m_hTif, TIFFTAG_IMAGELENGTH, (uint32) m_nHeight);
+    TIFFSetField(m_hTif, TIFFTAG_PHOTOMETRIC, m_nPhoto);
+    TIFFSetField(m_hTif, TIFFTAG_PLANARCONFIG, m_nPlanar);
+    TIFFSetField(m_hTif, TIFFTAG_SAMPLESPERPIXEL, m_nSamples);
+    TIFFSetField(m_hTif, TIFFTAG_BITSPERSAMPLE, m_nBitsPerSample);
+    if (m_nBitsPerSample==32)
+        TIFFSetField(m_hTif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
+    TIFFSetField(m_hTif, TIFFTAG_ROWSPERSTRIP, m_nRowsPerStrip);
+    TIFFSetField(m_hTif, TIFFTAG_COMPRESSION, m_nCompress);
+    TIFFSetField(m_hTif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+    TIFFSetField(m_hTif, TIFFTAG_XRESOLUTION, fXRes);
+    TIFFSetField(m_hTif, TIFFTAG_YRESOLUTION, fYRes);
+    if (bCompress)
+    {
+        if (m_nBitsPerSample==32)
+        {
+            TIFFSetField(m_hTif, TIFFTAG_PREDICTOR, PREDICTOR_FLOATINGPOINT);
+        }
+        else
+        {
+            TIFFSetField(m_hTif, TIFFTAG_PREDICTOR, PREDICTOR_HORIZONTAL);
+        }
+    }
+
+    m_nCurLine = 0;
+    m_nCurStrip = 0;
+
+    if (bSep && m_nSamples>1)
+    {
+        m_nStripSamples = m_nSamples;
+        if (m_nBitsPerSample % 8)
+        {
+            Close();
+            return false;
+        }
+        m_nBytesPerSample = m_nBitsPerSample / 8;
+
+        m_nStripSize = TIFFStripSize(m_hTif);
+        m_nBytesPerStripLine = m_nWidth * m_nBytesPerSample;
+
+        if (m_nStripSize!=m_nBytesPerStripLine)
+        {
+            Close();
+            return false;
+        }
+        m_nBytesPerLine = m_nWidth * m_nBytesPerSample * m_nSamples;
+
+        m_pStripBuf = (unsigned char*)malloc(m_nStripSize*m_nStripSamples);
+
+        if (!m_pStripBuf)
+        {
+            Close();
+            return false;
+        }
+        m_nStripsPerSample = m_nHeight / m_nRowsPerStrip;
+    }
     else
-      m_nPhoto = PHOTOMETRIC_MINISBLACK;
-    break;
-
-  case PHOTO_MINISWHITE:
-    if (m_nSamples==4)
-      m_nPhoto = PHOTOMETRIC_SEPARATED;
-    else
-      m_nPhoto = PHOTOMETRIC_MINISWHITE;
-    break;
-
-  case PHOTO_CIELAB:
-    m_nPhoto = PHOTOMETRIC_CIELAB;
-    break;
-
-  case PHOTO_ICCLAB:
-    m_nPhoto = PHOTOMETRIC_ICCLAB;
-    break;
-  }
-
-  m_hTif = TIFFOpen(szFname, "w");
-  if (!m_hTif) {
-    TIFFError(szFname,"Can not open output image");
-    return false;
-  }
-  TIFFSetField(m_hTif, TIFFTAG_IMAGEWIDTH, (uint32) m_nWidth);
-  TIFFSetField(m_hTif, TIFFTAG_IMAGELENGTH, (uint32) m_nHeight);
-  TIFFSetField(m_hTif, TIFFTAG_PHOTOMETRIC, m_nPhoto);
-  TIFFSetField(m_hTif, TIFFTAG_PLANARCONFIG, m_nPlanar);
-  TIFFSetField(m_hTif, TIFFTAG_SAMPLESPERPIXEL, m_nSamples);
-  TIFFSetField(m_hTif, TIFFTAG_BITSPERSAMPLE, m_nBitsPerSample);
-  if (m_nBitsPerSample==32)
-    TIFFSetField(m_hTif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
-  TIFFSetField(m_hTif, TIFFTAG_ROWSPERSTRIP, m_nRowsPerStrip);
-  TIFFSetField(m_hTif, TIFFTAG_COMPRESSION, m_nCompress);
-  TIFFSetField(m_hTif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-  TIFFSetField(m_hTif, TIFFTAG_XRESOLUTION, fXRes);
-  TIFFSetField(m_hTif, TIFFTAG_YRESOLUTION, fYRes);
-  if (bCompress) {
-    if (m_nBitsPerSample==32) {
-      TIFFSetField(m_hTif, TIFFTAG_PREDICTOR, PREDICTOR_FLOATINGPOINT);
+    {
+        m_nBytesPerLine = m_nStripSize = TIFFStripSize(m_hTif);
+        m_nStripSamples = 1;
     }
-    else {
-      TIFFSetField(m_hTif, TIFFTAG_PREDICTOR, PREDICTOR_HORIZONTAL);
-    }
-  }
 
-  m_nCurLine = 0;
-  m_nCurStrip = 0;
-
-  if (bSep && m_nSamples>1) {
-    m_nStripSamples = m_nSamples;
-    if (m_nBitsPerSample % 8) {
-      Close();
-      return false;
-    }
-    m_nBytesPerSample = m_nBitsPerSample / 8;
-
-    m_nStripSize = TIFFStripSize(m_hTif);
-    m_nBytesPerStripLine = m_nWidth * m_nBytesPerSample;
-
-    if (m_nStripSize!=m_nBytesPerStripLine) {
-      Close();
-      return false;
-    }
-    m_nBytesPerLine = m_nWidth * m_nBytesPerSample * m_nSamples;
-
-    m_pStripBuf = (unsigned char*)malloc(m_nStripSize*m_nStripSamples);
-
-    if (!m_pStripBuf) {
-      Close();
-      return false;
-    }
-    m_nStripsPerSample = m_nHeight / m_nRowsPerStrip;
-  }
-  else {
-    m_nBytesPerLine = m_nStripSize = TIFFStripSize(m_hTif);
-    m_nStripSamples = 1;
-  }
-
-  return true;
+    return true;
 }
 
 bool CTiffImg::Open(const char *szFname)
 {
-  Close();
-  m_bRead = true;
-
-  m_hTif = TIFFOpen(szFname, "r");
-  if (!m_hTif) {
-    TIFFError(szFname,"Can not open input image");
-    return false;
-  }
-  icUInt16Number nPlanar=PLANARCONFIG_CONTIG;
-  icUInt16Number nOrientation=ORIENTATION_TOPLEFT;
-  icUInt16Number nSampleFormat=SAMPLEFORMAT_UINT;
-  icUInt16Number *nSampleInfo=NULL;
-
-  TIFFGetField(m_hTif, TIFFTAG_IMAGEWIDTH, &m_nWidth);
-  TIFFGetField(m_hTif, TIFFTAG_IMAGELENGTH, &m_nHeight);
-  TIFFGetField(m_hTif, TIFFTAG_PHOTOMETRIC, &m_nPhoto);
-  TIFFGetField(m_hTif, TIFFTAG_PLANARCONFIG, &m_nPlanar);
-  TIFFGetField(m_hTif, TIFFTAG_SAMPLESPERPIXEL, &m_nSamples);
-  TIFFGetField(m_hTif, TIFFTAG_EXTRASAMPLES, &m_nExtraSamples, &nSampleInfo);
-  TIFFGetField(m_hTif, TIFFTAG_BITSPERSAMPLE, &m_nBitsPerSample);
-  TIFFGetField(m_hTif, TIFFTAG_SAMPLEFORMAT, &nSampleFormat);
-  TIFFGetField(m_hTif, TIFFTAG_ROWSPERSTRIP, &m_nRowsPerStrip);
-  TIFFGetField(m_hTif, TIFFTAG_ORIENTATION, &nOrientation);
-  TIFFGetField(m_hTif, TIFFTAG_XRESOLUTION, &m_fXRes);
-  TIFFGetField(m_hTif, TIFFTAG_YRESOLUTION, &m_fYRes);
-  TIFFGetField(m_hTif, TIFFTAG_COMPRESSION, &m_nCompress);
-
-  //Validate what we expect to work with
-  if ((m_nBitsPerSample==32 && nSampleFormat!=SAMPLEFORMAT_IEEEFP) ||
-      (m_nBitsPerSample!=32 && nSampleFormat!=SAMPLEFORMAT_UINT) ||
-       nOrientation != ORIENTATION_TOPLEFT) {
     Close();
-    return false;
-  }
-  m_nCurStrip=(unsigned int)-1;
-  m_nCurLine = 0;
+    m_bRead = true;
 
-  m_nStripSize = TIFFStripSize(m_hTif);
-
-  if (m_nSamples>1 && m_nPlanar==PLANARCONFIG_SEPARATE) {
-    m_nStripSamples = m_nSamples;
-    m_nBytesPerLine = (m_nWidth * m_nBitsPerSample * m_nSamples + 7)>>3;
-    m_nBytesPerSample = m_nBitsPerSample / 8;
-    m_nBytesPerStripLine = m_nWidth * m_nBytesPerSample;
-    //Only support bitspersample that fits on byte boundary
-    if (m_nBitsPerSample%8) {
-      Close();
-      return false;
+    m_hTif = TIFFOpen(szFname, "r");
+    if (!m_hTif) {
+        TIFFError(szFname,"Can not open input image");
+        return false;
     }
-    m_nStripsPerSample = m_nHeight / m_nRowsPerStrip;
-    //Only support separations that evenly fit into strips
-    if (m_nHeight % m_nRowsPerStrip) {
-      Close();
-      return false;
+    icUInt16Number nPlanar=PLANARCONFIG_CONTIG;
+    icUInt16Number nOrientation=ORIENTATION_TOPLEFT;
+    icUInt16Number nSampleFormat=SAMPLEFORMAT_UINT;
+    icUInt16Number *nSampleInfo=NULL;
+
+    TIFFGetField(m_hTif, TIFFTAG_IMAGEWIDTH, &m_nWidth);
+    TIFFGetField(m_hTif, TIFFTAG_IMAGELENGTH, &m_nHeight);
+    TIFFGetField(m_hTif, TIFFTAG_PHOTOMETRIC, &m_nPhoto);
+    TIFFGetField(m_hTif, TIFFTAG_PLANARCONFIG, &m_nPlanar);
+    TIFFGetField(m_hTif, TIFFTAG_SAMPLESPERPIXEL, &m_nSamples);
+    TIFFGetField(m_hTif, TIFFTAG_EXTRASAMPLES, &m_nExtraSamples, &nSampleInfo);
+    TIFFGetField(m_hTif, TIFFTAG_BITSPERSAMPLE, &m_nBitsPerSample);
+    TIFFGetField(m_hTif, TIFFTAG_SAMPLEFORMAT, &nSampleFormat);
+    TIFFGetField(m_hTif, TIFFTAG_ROWSPERSTRIP, &m_nRowsPerStrip);
+    TIFFGetField(m_hTif, TIFFTAG_ORIENTATION, &nOrientation);
+    TIFFGetField(m_hTif, TIFFTAG_XRESOLUTION, &m_fXRes);
+    TIFFGetField(m_hTif, TIFFTAG_YRESOLUTION, &m_fYRes);
+    TIFFGetField(m_hTif, TIFFTAG_COMPRESSION, &m_nCompress);
+
+    //Validate what we expect to work with
+    if ((m_nBitsPerSample==32 && nSampleFormat!=SAMPLEFORMAT_IEEEFP) ||
+        (m_nBitsPerSample!=32 && nSampleFormat!=SAMPLEFORMAT_UINT) ||
+        nOrientation != ORIENTATION_TOPLEFT) 
+    {
+        Close();
+        return false;
     }
-  }
-  else {
-    m_nStripSamples = 1;
-    m_nBytesPerLine = (m_nWidth * m_nBitsPerSample * m_nSamples + 7)>>3;
-  }
+    m_nCurStrip=(unsigned int)-1;
+    m_nCurLine = 0;
 
-  m_pStripBuf = (unsigned char*)malloc(m_nStripSize*m_nStripSamples);
+    m_nStripSize = TIFFStripSize(m_hTif);
 
-  if (!m_pStripBuf) {
-    Close();
-    return false;
-  }
+    if (m_nSamples>1 && m_nPlanar==PLANARCONFIG_SEPARATE) 
+    {
+        m_nStripSamples = m_nSamples;
+        m_nBytesPerLine = (m_nWidth * m_nBitsPerSample * m_nSamples + 7)>>3;
+        m_nBytesPerSample = m_nBitsPerSample / 8;
+        m_nBytesPerStripLine = m_nWidth * m_nBytesPerSample;
+        //Only support bitspersample that fits on byte boundary
+        if (m_nBitsPerSample%8)
+        {
+            Close();
+            return false;
+        }
+        
+        m_nStripsPerSample = m_nHeight / m_nRowsPerStrip;
+        //Only support separations that evenly fit into strips
+        if (m_nHeight % m_nRowsPerStrip)
+        {
+            Close();
+            return false;
+        }
+    }
+    else
+    {
+        m_nStripSamples = 1;
+        m_nBytesPerLine = (m_nWidth * m_nBitsPerSample * m_nSamples + 7)>>3;
+    }
 
-  return true;
+    m_pStripBuf = (unsigned char*)malloc(m_nStripSize*m_nStripSamples);
+
+    if (!m_pStripBuf) {
+        Close();
+        return false;
+    }
+
+    return true;
 }
 
 
 bool CTiffImg::ReadLine(unsigned char *pBuf)
 {
-  if (!m_bRead)
-    return false;
+    if (!m_bRead)
+        return false;
 
-  unsigned int nStrip = m_nCurLine / m_nRowsPerStrip;
-  unsigned int nRowOffset = m_nCurLine % m_nRowsPerStrip;
+    unsigned int nStrip = m_nCurLine / m_nRowsPerStrip;
+    unsigned int nRowOffset = m_nCurLine % m_nRowsPerStrip;
 
-  if (nStrip != m_nCurStrip) {
-    m_nCurStrip = nStrip;
+    if (nStrip != m_nCurStrip)
+    {
+        m_nCurStrip = nStrip;
 
-    if (m_nStripSamples>1) {
-      unsigned int s;
-      unsigned char *pos = m_pStripBuf;
-      unsigned int nStripOffset = 0;
-      for (s=0; s<m_nStripSamples; s++) {
-        if (TIFFReadEncodedStrip(m_hTif, m_nCurStrip+nStripOffset, pos, m_nStripSize) < 0) {
-          return false;
+        if (m_nStripSamples>1)
+        {
+            unsigned int s;
+            unsigned char *pos = m_pStripBuf;
+            unsigned int nStripOffset = 0;
+            for (s=0; s<m_nStripSamples; s++)
+            {
+                if (TIFFReadEncodedStrip(m_hTif, m_nCurStrip+nStripOffset, pos, m_nStripSize) < 0)
+                {
+                    return false;
+                }
+                nStripOffset += m_nStripsPerSample;
+                pos += m_nBytesPerStripLine;
+            }
         }
-        nStripOffset += m_nStripsPerSample;
-        pos += m_nBytesPerStripLine;
-      }
+        else if (TIFFReadEncodedStrip(m_hTif, m_nCurStrip, m_pStripBuf, m_nStripSize) < 0) {
+            return false;
+        }
     }
-    else if (TIFFReadEncodedStrip(m_hTif, m_nCurStrip, m_pStripBuf, m_nStripSize) < 0) {
-      return false;
-    }
-  }
 
-  if (m_nStripSamples>1) { //Sep to contig
-    unsigned char *src, *dst;
-    src = m_pStripBuf+nRowOffset*m_nBytesPerStripLine;
-    dst = pBuf;
-    unsigned int w, s;
-    for (w=0; w<m_nWidth; w++) {
-      unsigned char *pos = src;
-      for (s=0; s<m_nSamples; s++) {
-        memcpy(dst, pos, m_nBytesPerSample);
-        dst += m_nBytesPerSample;
-        pos += m_nStripSize;
-      }
-      src += m_nBytesPerSample;
+    if (m_nStripSamples>1)  //Sep to contig
+    {
+        unsigned char *src, *dst;
+        src = m_pStripBuf+nRowOffset*m_nBytesPerStripLine;
+        dst = pBuf;
+        unsigned int w, s;
+        for (w=0; w<m_nWidth; w++)
+        {
+            unsigned char *pos = src;
+            for (s=0; s<m_nSamples; s++)
+            {
+                memcpy(dst, pos, m_nBytesPerSample);
+                dst += m_nBytesPerSample;
+                pos += m_nStripSize;
+            }
+            src += m_nBytesPerSample;
+        }
     }
-  }
-  else {
-    memcpy(pBuf, m_pStripBuf+nRowOffset*m_nBytesPerLine, m_nBytesPerLine);
-  }
-  m_nCurLine++;
+    else
+    {
+        memcpy(pBuf, m_pStripBuf+nRowOffset*m_nBytesPerLine, m_nBytesPerLine);
+    }
+    m_nCurLine++;
 
-  return true;
+    return true;
 }
 
 bool CTiffImg::WriteLine(unsigned char *pBuf)
 {
-  if (m_bRead)
-    return false;
+    if (m_bRead)
+        return false;
 
-  if (m_nCurStrip < m_nHeight) { //Contig to Sep
-    if (m_nStripSamples>1) {
-      unsigned char *src, *dst;
-      src = pBuf;
-      dst = m_pStripBuf;
-      unsigned int w, s, offset;
-      for (w=0; w<m_nWidth; w++) {
-        unsigned char *pos = dst;
-        for (s=0; s<m_nSamples; s++) {
-          memcpy(pos, src, m_nBytesPerSample);
-          src += m_nBytesPerSample;
-          pos += m_nStripSize;
+    if (m_nCurStrip < m_nHeight)    //Contig to Sep
+    {
+        if (m_nStripSamples>1)
+        {
+            unsigned char *src, *dst;
+            src = pBuf;
+            dst = m_pStripBuf;
+            unsigned int w, s, offset;
+            for (w=0; w<m_nWidth; w++)
+            {
+                unsigned char *pos = dst;
+                for (s=0; s<m_nSamples; s++)
+                {
+                    memcpy(pos, src, m_nBytesPerSample);
+                    src += m_nBytesPerSample;
+                    pos += m_nStripSize;
+                }
+                dst += m_nBytesPerSample;
+            }
+            
+            offset = 0;
+            src = m_pStripBuf;
+            for (s=0; s<m_nSamples; s++)
+            {
+                if (TIFFWriteEncodedStrip(m_hTif, m_nCurStrip+offset, src, m_nStripSize) < 0)
+                    return false;
+                offset += m_nStripsPerSample;
+                src += m_nStripSize;
+            }
         }
-        dst += m_nBytesPerSample;
-      }
-      offset = 0;
-      src = m_pStripBuf;
-      for (s=0; s<m_nSamples; s++) {
-        if (TIFFWriteEncodedStrip(m_hTif, m_nCurStrip+offset, src, m_nStripSize) < 0)
-          return false;
-        offset += m_nStripsPerSample;
-        src += m_nStripSize;
-      }
+        else if (TIFFWriteEncodedStrip(m_hTif, m_nCurStrip, pBuf, m_nBytesPerLine) < 0)
+            return false;
+        
+        m_nCurStrip++;
     }
-    else if (TIFFWriteEncodedStrip(m_hTif, m_nCurStrip, pBuf, m_nBytesPerLine) < 0)
-      return false;
 
-    m_nCurStrip++;
-  }
-
-  return true;
+    return true;
 }
 
 unsigned int CTiffImg::GetPhoto()
 {
-  if (m_nPhoto==PHOTOMETRIC_MINISBLACK ||
-      m_nPhoto==PHOTOMETRIC_RGB) {
-    return PHOTO_MINISBLACK;
-  }
-  else if (m_nPhoto==PHOTOMETRIC_MINISWHITE ||
-           m_nPhoto==PHOTOMETRIC_SEPARATED) {
-    return PHOTO_MINISWHITE;
-  }
-  else if (m_nPhoto==PHOTOMETRIC_CIELAB)
-    return PHOTO_CIELAB;
-  else if (m_nPhoto==PHOTOMETRIC_ICCLAB)
-    return PHOTO_ICCLAB;
-  else
-    return PHOTO_MINISWHITE;
+    if (m_nPhoto==PHOTOMETRIC_MINISBLACK || m_nPhoto==PHOTOMETRIC_RGB)
+    {
+        return PHOTO_MINISBLACK;
+    }
+    else if (m_nPhoto==PHOTOMETRIC_MINISWHITE || m_nPhoto==PHOTOMETRIC_SEPARATED)
+    {
+        return PHOTO_MINISWHITE;
+    }
+    else if (m_nPhoto==PHOTOMETRIC_CIELAB)
+        return PHOTO_CIELAB;
+    else if (m_nPhoto==PHOTOMETRIC_ICCLAB)
+        return PHOTO_ICCLAB;
+    else
+        return PHOTO_MINISWHITE;
 }
 
 
 bool CTiffImg::GetIccProfile(unsigned char *&pProfile, unsigned int &nLen)
 {
-  pProfile = NULL;
-  nLen = 0;
+    pProfile = NULL;
+    nLen = 0;
 
-  TIFFGetField(m_hTif, TIFFTAG_ICCPROFILE, &nLen, &pProfile);
+    TIFFGetField(m_hTif, TIFFTAG_ICCPROFILE, &nLen, &pProfile);
 
-  return pProfile!=NULL && nLen>0;
+    return pProfile!=NULL && nLen>0;
 }
 
 bool CTiffImg::SetIccProfile(unsigned char *pProfile, unsigned int nLen)
 {
-  TIFFSetField(m_hTif, TIFFTAG_ICCPROFILE, nLen, pProfile);
+    TIFFSetField(m_hTif, TIFFTAG_ICCPROFILE, nLen, pProfile);
   
-  return true;
+    return true;
 }

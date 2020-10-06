@@ -71,7 +71,7 @@
 #if !defined(_TIFFIMG_H)
 #define _TIFFIMG_H
 
-#include "tiffio.h"                  // need tiff library
+#include "..\..\..\Include\tiffio.h"                  // need tiff library
 #include "IccProfLibConf.h"
 #include "icProfileHeader.h"
 
